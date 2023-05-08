@@ -1,10 +1,13 @@
-import telegram
+import cv2
+import keras as keras
+import numpy as np
 import requests
 import time
+import tensorflow as tf
+import update
 
 
 def request_last_message(token: str = ""):
-    # Get the file ID for the photo
     response = requests.post(
         f"https://api.telegram.org/bot{bot_token}/getUpdates"
     )
@@ -47,9 +50,14 @@ def send_message(token: str = "", chat_id: str = ""):
     print(requests.get(url).json())  # this sends the message
 
 
+class_names = ('have', 'do not have')
+img = cv2.imread('/home/pl/Documents/course_work_2/chest_xray/test/PNEUMONIA/0130.jpeg')
+img = np.expand_dims(cv2.resize(img, (256, 256)), 0)
+
 if __name__ == "__main__":
     # Replace YOUR_TOKEN with your actual bot token
     bot_token = "6073178391:AAHAbkwD9HJnkafy0wKOZTNINMBp2e7PpkY"
+    model = keras.models.load_model('/home/pl/Documents/course_work_2/model_full_train/')
 
     photo_messages_ids = []
     while True:
@@ -65,5 +73,8 @@ if __name__ == "__main__":
                     chat_id = last_message["chat"]["id"]
                     send_message(bot_token, chat_id)
                     photo_messages_ids.append(photo_message_id)
+                    prediction = model.predict(np.array([img]))
+                    pneumonia_predict = class_names[round(prediction[0][0])]
+                    update.message.reply_text(f"You {pneumonia_predict} pneumonia!")
 
         time.sleep(1.0)
