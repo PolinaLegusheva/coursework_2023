@@ -3,8 +3,6 @@ import keras as keras
 import numpy as np
 import requests
 import time
-import tensorflow as tf
-import update
 
 
 def request_last_message(token: str = ""):
@@ -50,18 +48,29 @@ def send_message(token: str = "", chat_id: str = ""):
     print(requests.get(url).json())  # this sends the message
 
 
-class_names = ('have', 'do not have')
-img = cv2.imread('/home/pl/Documents/course_work_2/chest_xray/test/PNEUMONIA/0130.jpeg')
-img = np.expand_dims(cv2.resize(img, (256, 256)), 0)
+def send_message2(token: str = "", chat_id: str = ""):
+    message = f"You {pneumonia_predict} pneumonia!"
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={chat_id}&text={message}"
+    print(requests.get(url).json())  # this sends the message
+
+
+def start(token: str = "", chat_id: str = ""):
+    message = "Hello! It is FluorographyBot. Send me a picture of your lungs "
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={chat_id}&text={message}"
+    print(requests.get(url).json())
+
 
 if __name__ == "__main__":
     # Replace YOUR_TOKEN with your actual bot token
     bot_token = "6073178391:AAHAbkwD9HJnkafy0wKOZTNINMBp2e7PpkY"
     model = keras.models.load_model('/home/pl/Documents/course_work_2/model_full_train/')
+    class_names = ('do not have', 'have')
 
     photo_messages_ids = []
     while True:
         last_message = request_last_message(bot_token)
+        chat_id = last_message["chat"]["id"]
+        start(bot_token, chat_id)
         if "photo" in last_message.keys():
             photo_message_id = last_message["message_id"]
 
@@ -70,11 +79,13 @@ if __name__ == "__main__":
                 stat_code = download_photo(bot_token, file_id)
 
                 if stat_code == 200:
+                    img = cv2.imread('/home/pl/PycharmProjects/fluorogram/photo.jpg')
+                    img = np.expand_dims(cv2.resize(img, (256, 256)), 0)
                     chat_id = last_message["chat"]["id"]
                     send_message(bot_token, chat_id)
                     photo_messages_ids.append(photo_message_id)
-                    prediction = model.predict(np.array([img]))
+                    prediction = model.predict(img)
                     pneumonia_predict = class_names[round(prediction[0][0])]
-                    update.message.reply_text(f"You {pneumonia_predict} pneumonia!")
+                    send_message2(bot_token, chat_id)
 
         time.sleep(1.0)
